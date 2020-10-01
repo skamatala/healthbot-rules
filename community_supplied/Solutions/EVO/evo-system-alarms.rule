@@ -1,0 +1,91 @@
+/*
+ * Detects system alarms and notifies when anomalies are found.
+ *  
+ */
+ healthbot {
+    topic system.alarms {
+        rule check-system-alarms {
+            synopsis "System alarms detector";
+            description "Collects system stats and notify anomalies when alarms found";
+	        /*
+            * Use alarm-description slot as key for rule.
+            */
+            keys alarm-description;
+            sensor system {
+		synopsis "System netconf alarm sensor";
+                description "System iAgent sensor to collect data from network device";
+                iAgent {
+                    file System-Alarms.yml;
+                    table SystemAlarmTable;
+                    frequency 60s;
+                }
+            }
+            field alarm-description {
+                sensor system {
+                    path alarm-description;
+                    data-if-missing {
+                        value "No alarms currently active";
+                    }
+                }
+                type string;
+                description "System alarm description";
+            }
+            /*
+            * Anomaly detection logic for buffer memory utilization.
+            */
+            trigger system-alarms {
+                synopsis "System alarms KPI";
+                description "Sets health based on system alarm type";
+                frequency 60s;
+                /*
+                * Sets color to red and sends out an anomaly notification when
+                * major system alarms detected
+                * 
+                */
+                term does-major-alarm-exist {
+                    when {
+                        matches-with "$alarm-class" Major {
+                            ignore-case;
+                        }
+                        does-not-match-with "$alarm-description" "No alarms currently active";
+                    }
+                    then {
+                        status {
+                            color red;
+                            message "System alarms detected at $alarm-time, class:$alarm-class, $alarm-description";
+                        }
+                    }
+                }
+                /*
+                * Sets color to yellow and sends out an anomaly notification when
+                * medium or minor system alarms detected
+                * 
+                */
+                term does-minor-alarm-exist {
+                    when {
+                        does-not-match-with "$alarm-description" "No alarms currently active" {
+                            ignore-case;
+                        }
+                    }
+                    then {
+                        status {
+                            color yellow;
+                            message "System alarms detected at $alarm-time, class:$alarm-class, $alarm-description";
+                        }
+                    }
+                }
+                /*
+                * Defaults color to green.
+                */
+                term no-alarm {
+                    then {
+                        status {
+                            color green;
+                            message "No system alarms detected";
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

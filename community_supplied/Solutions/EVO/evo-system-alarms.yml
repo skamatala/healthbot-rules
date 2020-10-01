@@ -1,0 +1,13 @@
+---
+SystemAlarmTable:
+    rpc: get-system-alarm-information
+    item: alarm-detail
+    key: alarm-description
+    view: SystemAlarmView
+
+SystemAlarmView:
+    fields:
+        alarm-time: alarm-time
+        alarm-class: alarm-class
+        alarm-short-description: alarm-short-description
+        alarm-type: alarm-type
